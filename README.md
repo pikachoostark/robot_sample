@@ -10,8 +10,8 @@ Then use
 ```bash
 $ . install/setup.bash
 $ ros2 run robot_sample talker
-to run project
 ```
+to run project
 
 You can uncomment marked lines in /src/main.cpp to add time delay (5 seconds there) if you want to listen topics manually.
 You can use 
