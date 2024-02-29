@@ -18,14 +18,14 @@ struct Particle {
     double x;
     double y;
     double angle;
-    double weight;  // Вес частицы: вероятность того, что координаты частицы совпадают с координатами робота
+    double weight;
 
     Particle(double x, double y, double angle, double weight) : x(x), y(y), angle(angle), weight(weight) {}
 };
 
 class ParticleFilter {
 private:
-    int num_particles;  // Число частиц
+    int num_particles;
     std::vector<Particle> particles;
     std::vector<double> weights;
 
@@ -35,7 +35,7 @@ public:
     }
 
     void initializeParticles() {
-        // Инициализация частиц в случайных местах
+        // Init particles in random places
         particles.clear();
         weights.clear();
         std::default_random_engine generator;
@@ -51,7 +51,7 @@ public:
     }
 
     void predict(double turn_angle, double distance, double control_noise) {
-        // Предсказание нового состояния частиц после движения
+        // Predict new state of particles after moving
         std::default_random_engine generator;
         std::normal_distribution<double> control_dist(0, control_noise);
 
@@ -66,7 +66,7 @@ public:
     }
 
     void updateWeights(std::vector<double> measurements, double measurement_noise) {
-        // Обновление весов частиц на основе измерений
+        // Update weights of particles due to measurements
         weights.clear();
         std::default_random_engine generator;
         std::normal_distribution<double> measurement_dist(0, measurement_noise);
@@ -104,7 +104,7 @@ public:
     }
 
     void resample() {
-        // Ресемплирование частиц на основе их весов
+        // Resample particles by their weights
         std::vector<Particle> resampled_particles;
         std::default_random_engine generator;
         std::uniform_real_distribution<double> distribution(0.0, 1.0);
@@ -132,10 +132,10 @@ public:
     }
 
     std::vector<double> estimateState() {
-        // Оценка наиболее вероятного состояния робота на основе частиц
-        // Можно использовать различные методы для оценки, например, вычисление среднего или максимального веса частиц
+        // Estimate the most probable state of robot due to particles 
+        // There are different methods: e.g. average or maximum weights
 
-        // Пример: оценка как среднее из положений частиц
+        // Here I used average weights:
         double avg_x = 0.0;
         double avg_y = 0.0;
 
@@ -150,12 +150,12 @@ public:
 
 class Robot {
 private:
-    double x; // текущая координата x
-    double y; // текущая координата y
-    double angle; // текущий угол поворота
+    double x;
+    double y;
+    double angle;
 
-    double control_noise; // шум управления
-    double measurement_noise; // шум измерения
+    double control_noise;
+    double measurement_noise;
 
 public:
     Robot(double initial_x, double initial_y, double initial_angle, double control_noise, double measurement_noise) :
@@ -163,33 +163,28 @@ public:
         control_noise(control_noise), measurement_noise(measurement_noise) {}
 
     void move(double turn_angle, double distance) {
-        // Симуляция шума управления
         std::default_random_engine generator;
         std::normal_distribution<double> control_dist(0, control_noise);
 
-        turn_angle += control_dist(generator); // добавление шума к углу поворота
-        distance += control_dist(generator);   // добавление шума к движению
+        turn_angle += control_dist(generator);
+        distance += control_dist(generator);
 
-        // Пересчет координат после движения
         double new_angle = angle + turn_angle;
 
         double new_x = x - distance * sin(new_angle);
         double new_y = y + distance * cos(new_angle);
 
-        // Проверка на выход за границы
         if (new_x >= 0 && new_x <= 100 && new_y >= 0 && new_y <= 100) {
             x = new_x;
             y = new_y;
             angle = new_angle;
         }
-        else {
-            // Обработка выхода за границы 
+        else { 
             std::cout << "Robot can't move outside the grid!" << std::endl;
         }
     }
 
     std::vector<double> sense() {
-        // Симуляция шума измерения
         std::default_random_engine generator;
         std::normal_distribution<double> measurement_dist(0, measurement_noise);
 
@@ -240,17 +235,17 @@ int main(int argc, char* argv[]) {
     auto position_msg = std_msgs::msg::String();
 
     Robot robot(50, 50, 0, 0.1, 0.1);
-    ParticleFilter pf(100); // Создание фильтра
+    ParticleFilter pf(100); // Filter creating
 
     std::string initial_state = "Initial state: x = " + std::to_string(robot.get_x()) + ", y = " + std::to_string(robot.get_y());
     std::cout << initial_state << std::endl;
     truth_msg.data = initial_state;
     truth_publisher->publish(truth_msg);
 
-    std::vector<double> measurements = robot.sense(); // Измерения пеленга
-    pf.updateWeights(measurements, 0.1); // Обновление весов
-    pf.resample(); // Ресемплирование
-    pf.estimateState(); // Оценка состояния
+    std::vector<double> measurements = robot.sense(); // Peleng measurements
+    pf.updateWeights(measurements, 0.1);
+    pf.resample();
+    pf.estimateState();
 
     std::string true_state, estimated_state;
     std::vector<double> estimate;
@@ -261,7 +256,7 @@ int main(int argc, char* argv[]) {
         std::cout << "Movement " << i << std::endl;
 
         robot.move(move[i][0], move[i][1]);
-        std::vector<double> measurements = robot.sense(); // Измерения пеленга
+        std::vector<double> measurements = robot.sense(); // Peleng measurements
 
         true_state = "True state: x = " + std::to_string(robot.get_x()) + ", y = " + std::to_string(robot.get_y());
         std::cout << true_state << std::endl;
@@ -269,9 +264,9 @@ int main(int argc, char* argv[]) {
         truth_publisher->publish(truth_msg);
 
         pf.predict(move[i][0], move[i][1], 0.1);
-        pf.updateWeights(measurements, 0.1); // Обновление весов
-        pf.resample(); // Ресемплирование
-        estimate = pf.estimateState(); // Оценка состояния
+        pf.updateWeights(measurements, 0.1);
+        pf.resample();
+        estimate = pf.estimateState();
 
         estimated_state = "Estimated state: x = " + std::to_string(estimate[0]) + ", y = " + std::to_string(estimate[1]);
         std::cout << estimated_state << std::endl;
